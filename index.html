@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c5a7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="フレ管計算">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>html{color-scheme:light dark}body{margin:0}</style><title>フレ管計算機</title>
+<style>
+:root{
+  --bg:#e9eef0; --surface:#f8fafb; --ink:#16252d; --muted:#5b6e78; --line:#c7d2d8;
+  --accent:#0c5a7a; --accent-ink:#ffffff; --result:#dcebf1; --warn:#a4400f; --warn-bg:#fbe9dd;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10191e; --surface:#182329; --ink:#e6eef1; --muted:#93a6af; --line:#2c3b43;
+    --accent:#5fb6d9; --accent-ink:#08222d; --result:#1d3540; --warn:#f0a36f; --warn-bg:#3a2417;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10191e; --surface:#182329; --ink:#e6eef1; --muted:#93a6af; --line:#2c3b43;
+  --accent:#5fb6d9; --accent-ink:#08222d; --result:#1d3540; --warn:#f0a36f; --warn-bg:#3a2417;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.6;padding-inline:16px;padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(40px + env(safe-area-inset-bottom,0px))}
+main{max-width:480px;margin-inline:auto;display:flex;flex-direction:column;gap:20px}
+h1{margin:0;font-size:1.5rem;letter-spacing:.04em;text-wrap:balance}
+.sub{margin:2px 0 0;color:var(--muted);font-size:.85rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:16px}
+.lbl{display:block;font-size:.8rem;color:var(--muted);letter-spacing:.08em;margin-bottom:6px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{text-align:center;padding:12px 4px;font-weight:700;font-size:1.05rem;cursor:pointer;border-left:1px solid var(--line);font-variant-numeric:tabular-nums}
+.seg label:first-of-type{border-left:0}
+.seg input:checked+label{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible+label{outline:3px solid var(--ink);outline-offset:-3px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input[type=number],select{width:100%;font:inherit;font-size:1.25rem;font-variant-numeric:tabular-nums;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=number]:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.hint{font-size:.78rem;color:var(--muted);margin:-8px 0 0}
+.res{background:var(--result);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.main-r .lbl{margin-bottom:0}
+.big{font-size:3rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--accent)}
+.big small{font-size:1rem;font-weight:400;color:var(--muted);margin-left:6px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.val small{font-size:.8rem;font-weight:400;color:var(--muted);margin-left:4px}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:10px 12px;font-size:.9rem}
+.empty{color:var(--muted);font-size:.95rem;margin:0}
+.note{font-size:.75rem;color:var(--muted);margin:0}
+</style>
+
+</head><body><main>
+  <header>
+    <h1>フレ管計算機</h1>
+    <p class="sub">エルボ組合せ・Φ・縦フレ/横フレから、単管長と水平距離を求めます</p>
+  </header>
+
+  <section class="panel" aria-label="入力">
+    <div>
+      <span class="lbl" id="t-lbl">組合せ</span>
+      <div class="seg" role="radiogroup" aria-labelledby="t-lbl">
+        <input type="radio" name="type" id="t1" value="90-90" checked><label for="t1">90-90</label>
+        <input type="radio" name="type" id="t2" value="45-90"><label for="t2">45-90</label>
+        <input type="radio" name="type" id="t3" value="45-45"><label for="t3">45-45</label>
+      </div>
+    </div>
+    <div>
+      <label class="lbl" for="dia">Φ (口径)</label>
+      <select id="dia"></select>
+    </div>
+    <div class="row">
+      <div><label class="lbl" for="v">縦フレ (㎜)</label><input id="v" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+      <div><label class="lbl" for="h">横フレ (㎜)</label><input id="h" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+    </div>
+    <p class="hint">片方だけ入力＝一方向のフレ、両方入力＝斜め(√(縦²＋横²))</p>
+  </section>
+
+  <section class="res" aria-live="polite" id="out"></section>
+  <p class="note">小数点以下は切り捨て。数値は現場で必ず実測と照合してください。</p>
+</main>
+
+<script>
+(function(){
+  var T = Math.tan(22.5*Math.PI/180), R2 = Math.SQRT2;
+  var $ = function(id){return document.getElementById(id)};
+  var dia = $('dia');
+  for(var d=75; d<=600; d+=25){ var o=document.createElement('option'); o.value=d; o.textContent=d; dia.appendChild(o); }
+
+  function calc(type, D, v, h){
+    if(!(v>0) && !(h>0)) return null;
+    var s = (v>0 && h>0) ? Math.sqrt(v*v+h*h) : Math.max(v,h);
+    if(type==='90-90') return {tube:Math.floor(s-2*D), hh:2*D, hc:D};
+    if(type==='45-90') return {tube:Math.floor(s*R2-D-D*T), hh:null, hc:Math.floor(s+D*T)};
+    return {tube:Math.floor(s*R2-2*D*T), hh:Math.floor(s+2*D*T), hc:Math.floor(s+D*T)};
+  }
+  function fmt(n){ return n===null ? '－' : String(n); }
+
+  function save(){ try{ localStorage.setItem('fure', JSON.stringify({t:type(),d:dia.value,v:$('v').value,h:$('h').value})); }catch(e){} }
+  function type(){ return document.querySelector('input[name=type]:checked').value; }
+
+  function render(){
+    var r = calc(type(), +dia.value, parseFloat($('v').value)||0, parseFloat($('h').value)||0);
+    var out = $('out');
+    if(!r){ out.innerHTML = '<p class="empty">縦フレ・横フレのどちらか(または両方)を入力してください。</p>'; return; }
+    var w = r.tube<=0 ? '<div class="warn">単管長が0以下です。フレが小さすぎて、この口径・組合せのエルボが収まりません。</div>' : '';
+    out.innerHTML =
+      '<div class="main-r"><span class="lbl">単管長</span><div class="big">'+r.tube+'<small>㎜</small></div></div>'+ w +
+      '<div class="pair"><div><span class="lbl">水平距離 (ヒモ-ヒモ)</span><div class="val">'+fmt(r.hh)+(r.hh===null?'':'<small>㎜</small>')+'</div></div>'+
+      '<div><span class="lbl">水平距離 (ヒモ-芯)</span><div class="val">'+fmt(r.hc)+'<small>㎜</small></div></div></div>';
+  }
+
+  try{
+    var s = JSON.parse(localStorage.getItem('fure')||'null');
+    if(s){ var rb=document.querySelector('input[name=type][value="'+s.t+'"]'); if(rb) rb.checked=true; dia.value=s.d; $('v').value=s.v; $('h').value=s.h; }
+  }catch(e){}
+  if(!dia.value) dia.value = 200;
+  if(!$('v').value && !$('h').value){ $('v').value = 500; $('h').value = 300; } // 初期表示用の例
+
+  document.addEventListener('input', function(){ render(); save(); });
+  render();
+})();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script>
+</body></html>
