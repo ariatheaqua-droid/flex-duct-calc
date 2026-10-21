@@ -106,22 +106,26 @@ input[type=number]:focus-visible,select:focus-visible{outline:3px solid var(--ac
   function type(){ return document.querySelector('input[name=type]:checked').value; }
 
   function render(){
-    var r = calc(type(), +dia.value, parseFloat($('v').value)||0, parseFloat($('h').value)||0);
+    var v = parseFloat($('v').value)||0, h = parseFloat($('h').value)||0;
+    var r = calc(type(), +dia.value, v, h);
     var out = $('out');
-    if(!r){ out.innerHTML = '<p class="empty">縦フレ・横フレのどちらか(または両方)を入力してください。</p>'; return; }
+    var neg = (v<0 || h<0) ? '<div class="warn">マイナスの値は計算に使っていません。フレは0以上で入力してください。</div>' : '';
+    if(!r){ out.innerHTML = neg + '<p class="empty">縦フレ・横フレのどちらか(または両方)を入力してください。</p>'; return; }
     var w = r.tube<=0 ? '<div class="warn">単管長が0以下です。フレが小さすぎて、この口径・組合せのエルボが収まりません。</div>' : '';
     out.innerHTML =
-      '<div class="main-r"><span class="lbl">単管長</span><div class="big">'+r.tube+'<small>㎜</small></div></div>'+ w +
+      '<div class="main-r"><span class="lbl">単管長</span><div class="big">'+r.tube+'<small>㎜</small></div></div>'+ w + neg +
       '<div class="pair"><div><span class="lbl">水平距離 (ヒモ-ヒモ)</span><div class="val">'+fmt(r.hh)+(r.hh===null?'':'<small>㎜</small>')+'</div></div>'+
       '<div><span class="lbl">水平距離 (ヒモ-芯)</span><div class="val">'+fmt(r.hc)+'<small>㎜</small></div></div></div>';
   }
 
+  dia.value = 200; // 選択肢を並べた時点で先頭の75が選ばれているので、先に初期値を入れておく
+  var s = null;
   try{
-    var s = JSON.parse(localStorage.getItem('fure')||'null');
+    s = JSON.parse(localStorage.getItem('fure')||'null');
     if(s){ var rb=document.querySelector('input[name=type][value="'+s.t+'"]'); if(rb) rb.checked=true; dia.value=s.d; $('v').value=s.v; $('h').value=s.h; }
   }catch(e){}
   if(!dia.value) dia.value = 200;
-  if(!$('v').value && !$('h').value){ $('v').value = 500; $('h').value = 300; } // 初期表示用の例
+  if(!s){ $('v').value = 500; $('h').value = 300; } // 初めて開いた時だけ出す例(両方消して開き直しても戻さない)
 
   document.addEventListener('input', function(){ render(); save(); });
   render();
